@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Demo</title>
+<style>
+:root {
+  --bg: #0a0f1e;
+  --surface: #131929;
+  --surface2: #1e293b;
+  --border: #2d3f57;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --cyan: #22d3ee;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Slide container */
+.deck {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 5vw;
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slide.exit {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* Navigation */
+.nav {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 100;
+}
+
+.nav-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.nav-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+.progress {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s, width 0.2s;
+  cursor: pointer;
+}
+
+.dot.active {
+  background: var(--accent);
+  width: 20px;
+  border-radius: 3px;
+}
+
+.slide-num {
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-width: 3rem;
+  text-align: center;
+}
+
+/* Keyboard hint */
+.key-hint {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  font-size: 0.6875rem;
+  color: var(--border);
+}
+
+/* ── Slide 1: Title ── */
+.s1 {
+  background: radial-gradient(ellipse at 30% 40%, rgba(99,102,241,0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, rgba(34,211,238,0.08) 0%, transparent 50%),
+              var(--bg);
+}
+
+.s1 .logo {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--accent2) 0%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+
+.s1 .sub {
+  font-size: clamp(1rem, 2vw, 1.375rem);
+  color: var(--muted);
+  font-weight: 400;
+  margin-bottom: 3rem;
+}
+
+.s1 .pill-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* ── Slide 2: What is Claude Code ── */
+.s2 { background: var(--bg); }
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 1.25rem;
+}
+
+.slide-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 860px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  padding: 1.5rem;
+}
+
+.card-icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+.card-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.375rem; }
+.card-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+/* ── Slide 3: Demo app ── */
+.app-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  overflow: hidden;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.app-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot-red   { width:10px;height:10px;border-radius:50%;background:#ef4444; }
+.dot-yellow{ width:10px;height:10px;border-radius:50%;background:#f59e0b; }
+.dot-green { width:10px;height:10px;border-radius:50%;background:#10b981; }
+
+.app-bar-title {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-left: 0.5rem;
+}
+
+.app-body { padding: 1.25rem; }
+
+.mock-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mock-field {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  height: 2rem;
+}
+
+.mock-btn {
+  background: var(--accent);
+  border-radius: 0.375rem;
+  width: 3.5rem;
+  height: 2rem;
+}
+
+.mock-task {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mock-task-text { font-size: 0.8125rem; color: var(--muted); }
+.mock-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+/* ── Slide 4: Bugs ── */
+.bug-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 720px;
+}
+
+.bug-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.bug-num {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  font-weight: 700;
+  font-size: 0.875rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bug-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+.bug-desc  { font-size: 0.875rem; color: var(--muted); line-height: 1.55; }
+
+.code-inline {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: rgba(99,102,241,0.12);
+  color: var(--accent2);
+  padding: 0.1em 0.45em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+/* ── Slide 5: Step 1 ── */
+.step-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 860px;
+  align-items: start;
+}
+
+.step-left {}
+
+.step-num {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--success);
+  margin-bottom: 0.75rem;
+}
+
+.step-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.875rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.step-desc {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+.terminal {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.term-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.875rem;
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.term-bar span { font-size: 0.75rem; color: var(--muted); margin-left: 0.5rem; }
+
+.term-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.75;
+}
+
+.term-prompt { color: var(--success); }
+.term-cmd    { color: var(--text); }
+.term-out    { color: var(--muted); }
+.term-fix    { color: var(--success); }
+.term-add    { color: var(--cyan); }
+
+.fix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.fix-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.fix-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  flex-shrink: 0;
+}
+
+.fix-icon.done { background: rgba(16,185,129,0.15); color: var(--success); }
+.fix-icon.add  { background: rgba(34,211,238,0.15); color: var(--cyan); }
+
+/* ── Slide 6: Step 2 ── */
+
+/* ── Slide 7: Capabilities ── */
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+  width: 100%;
+  max-width: 760px;
+}
+
+.cap-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.cap-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.cap-title { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.25rem; }
+.cap-desc  { font-size: 0.8125rem; color: var(--muted); line-height: 1.55; }
+
+/* ── Slide 8: Try it ── */
+.s8 {
+  background: radial-gradient(ellipse at 60% 40%, rgba(99,102,241,0.12) 0%, transparent 55%),
+              var(--bg);
+}
+
+.try-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.try-sub {
+  font-size: 1.0625rem;
+  color: var(--muted);
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.cmd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 540px;
+}
+
+.cmd-row {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9375rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.cmd-row .term-prompt { flex-shrink: 0; }
+.cmd-anno {
+  font-family: -apple-system, sans-serif;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- ── Slide 1: Title ── -->
+  <section class="slide s1 active" data-slide="0">
+    <div class="logo">Claude Code</div>
+    <div class="sub">AIがコードを書き、バグを直し、機能を追加する</div>
+    <div class="pill-row">
+      <span class="pill">🛠 Dev Task Tracker デモ</span>
+      <span class="pill">Vanilla JS</span>
+      <span class="pill">バグ修正 → 機能追加</span>
+    </div>
+  </section>
+
+  <!-- ── Slide 2: What is Claude Code ── -->
+  <section class="slide s2" data-slide="1">
+    <div class="section-label">What is Claude Code?</div>
+    <div class="slide-title">ターミナルで動くAIコーディングエージェント</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">コードベースを理解</div>
+        <div class="card-desc">CLAUDE.md を読んでプロジェクト全体を把握。ファイルを横断して文脈を理解する。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🐛</div>
+        <div class="card-title">バグを発見・修正</div>
+        <div class="card-desc">コードを静的解析してバグを特定。変更理由を説明しながら修正する。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✨</div>
+        <div class="card-title">機能を追加</div>
+        <div class="card-desc">既存コードを壊さずに新機能を実装。スタイルやパターンに合わせて書く。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <div class="card-title">対話しながら開発</div>
+        <div class="card-desc">曖昧な指示でも確認しながら実装。承認・却下・追加指示ができる。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 3: Demo App ── -->
+  <section class="slide" data-slide="2">
+    <div class="section-label">Demo App</div>
+    <div class="slide-title" style="margin-bottom:1.5rem">Dev Task Tracker</div>
+    <div style="display:flex;gap:3rem;align-items:flex-start;max-width:860px;width:100%;">
+      <div class="app-preview" style="flex-shrink:0;width:320px;">
+        <div class="app-bar">
+          <div class="dot-red"></div>
+          <div class="dot-yellow"></div>
+          <div class="dot-green"></div>
+          <span class="app-bar-title">Dev Task Tracker</span>
+        </div>
+        <div class="app-body">
+          <div class="mock-input">
+            <div class="mock-field"></div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:.375rem;width:3rem;height:2rem;"></div>
+            <div class="mock-btn"></div>
+          </div>
+          <div class="mock-task" style="border-left-color:#ef4444">
+            <span class="mock-task-text">APIの認証バグを修正</span>
+            <span class="mock-badge" style="background:rgba(239,68,68,.15);color:#f87171;">高</span>
+          </div>
+          <div class="mock-task" style="border-left-color:#f59e0b">
+            <span class="mock-task-text">ユニットテストを追加</span>
+            <span class="mock-badge" style="background:rgba(245,158,11,.15);color:#fbbf24;">中</span>
+          </div>
+          <div class="mock-task" style="border-left-color:#64748b;opacity:.5">
+            <span class="mock-task-text" style="text-decoration:line-through">ドキュメント更新</span>
+            <span class="mock-badge" style="background:rgba(100,116,139,.15);color:#94a3b8;">低</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;padding-top:.5rem;">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1.25rem;">ファイル構成</div>
+        <div style="display:flex;flex-direction:column;gap:.625rem;font-size:.9rem;font-family:'SF Mono','Fira Code',monospace;">
+          <div style="display:flex;gap:.75rem;align-items:center;">
+            <span style="color:var(--cyan);">index.html</span>
+            <span style="color:var(--muted);font-family:inherit;">— HTMLテンプレート</span>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;">
+            <span style="color:var(--accent2);">style.css</span>
+            <span style="color:var(--muted);font-family:inherit;">— ダークテーマ</span>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;">
+            <span style="color:var(--warning);">app.js</span>
+            <span style="color:var(--muted);font-family:inherit;">— ロジック <span style="color:var(--danger);font-size:.8em;">(バグあり)</span></span>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;">
+            <span style="color:var(--success);">CLAUDE.md</span>
+            <span style="color:var(--muted);font-family:inherit;">— AI向けコンテキスト</span>
+          </div>
+        </div>
+        <div style="margin-top:2rem;padding:1rem;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:.625rem;">
+          <div style="font-size:.75rem;font-weight:700;color:#f87171;margin-bottom:.5rem;">⚠ 意図的なバグ 3件 + 未実装機能 2件</div>
+          <div style="font-size:.8125rem;color:var(--muted);">Claude Code がどう解決するかをリアルタイムで体験できます</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 4: Bugs ── -->
+  <section class="slide" data-slide="3">
+    <div class="section-label">Known Bugs</div>
+    <div class="slide-title">app.js に仕込まれた3つのバグ</div>
+    <div class="bug-list">
+      <div class="bug-card">
+        <div class="bug-num">1</div>
+        <div>
+          <div class="bug-title">入力欄がクリアされない</div>
+          <div class="bug-desc"><code class="code-inline">addTask()</code> でタスク追加後、<code class="code-inline">input.value = ''</code> の1行が抜けている</div>
+        </div>
+      </div>
+      <div class="bug-card">
+        <div class="bug-num">2</div>
+        <div>
+          <div class="bug-title">完了カウンターが更新されない</div>
+          <div class="bug-desc"><code class="code-inline">toggleComplete()</code> 内で <code class="code-inline">updateStats()</code> の呼び出しが抜けている</div>
+        </div>
+      </div>
+      <div class="bug-card">
+        <div class="bug-num">3</div>
+        <div>
+          <div class="bug-title">削除が別のタスクに当たる</div>
+          <div class="bug-desc"><code class="code-inline">deleteTask()</code> 内の <code class="code-inline">findIndex</code> が <code class="code-inline">id + 1</code> を検索するオフバイワンエラー</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 5: Step 1 Bug Fix ── -->
+  <section class="slide" data-slide="4">
+    <div class="step-layout">
+      <div class="step-left">
+        <div class="step-num">Step 1 — Bug Fix</div>
+        <div class="step-title">「バグを全部直して」</div>
+        <div class="step-desc">
+          たった一言の指示で Claude Code が CLAUDE.md を読み、
+          コードを解析して3件すべてを修正します。
+        </div>
+        <div class="fix-list">
+          <div class="fix-item">
+            <div class="fix-icon done">✓</div>
+            <span>入力欄クリア — <code class="code-inline">input.value = ''</code> を追加</span>
+          </div>
+          <div class="fix-item">
+            <div class="fix-icon done">✓</div>
+            <span>カウンター更新 — <code class="code-inline">updateStats()</code> を追加</span>
+          </div>
+          <div class="fix-item">
+            <div class="fix-icon done">✓</div>
+            <span>削除バグ — <code class="code-inline">id + 1</code> → <code class="code-inline">id</code> に修正</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="terminal">
+          <div class="term-bar">
+            <div class="dot-red"></div>
+            <div class="dot-yellow"></div>
+            <div class="dot-green"></div>
+            <span>bash</span>
+          </div>
+          <div class="term-body">
+            <div><span class="term-prompt">$ </span><span class="term-cmd">claude "このアプリのバグを全部直して"</span></div>
+            <div class="term-out" style="margin-top:.5rem;">Reading CLAUDE.md...</div>
+            <div class="term-out">Analyzing app.js...</div>
+            <div style="margin-top:.375rem;">
+              <span class="term-fix">✓ Bug 1</span><span class="term-out"> input.value = '' を追加</span>
+            </div>
+            <div>
+              <span class="term-fix">✓ Bug 2</span><span class="term-out"> updateStats() を追加</span>
+            </div>
+            <div>
+              <span class="term-fix">✓ Bug 3</span><span class="term-out"> id+1 → id に修正</span>
+            </div>
+            <div style="margin-top:.5rem;" class="term-out">3 bugs fixed in app.js</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 6: Step 2 Feature Add ── -->
+  <section class="slide" data-slide="5">
+    <div class="step-layout">
+      <div class="step-left">
+        <div class="step-num">Step 2 — Feature Addition</div>
+        <div class="step-title">「フィルターと検索を追加して」</div>
+        <div class="step-desc">
+          未実装だった2機能を既存コードに合わせて追加。
+          スタイルもアプリのテーマに合わせて自動生成します。
+        </div>
+        <div class="fix-list">
+          <div class="fix-item">
+            <div class="fix-icon add">+</div>
+            <span>フィルタータブ — 全て / アクティブ / 完了済み</span>
+          </div>
+          <div class="fix-item">
+            <div class="fix-icon add">+</div>
+            <span>テキスト検索 — キーワードでリアルタイム絞り込み</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="terminal">
+          <div class="term-bar">
+            <div class="dot-red"></div>
+            <div class="dot-yellow"></div>
+            <div class="dot-green"></div>
+            <span>bash</span>
+          </div>
+          <div class="term-body">
+            <div><span class="term-prompt">$ </span><span class="term-cmd">claude "フィルター機能と<br>  検索機能を追加して"</span></div>
+            <div class="term-out" style="margin-top:.5rem;">Reading CLAUDE.md...</div>
+            <div class="term-out">Editing index.html...</div>
+            <div class="term-out">Editing style.css...</div>
+            <div class="term-out">Editing app.js...</div>
+            <div style="margin-top:.375rem;">
+              <span class="term-add">+ </span><span class="term-out">Filter tabs (All/Active/Done)</span>
+            </div>
+            <div>
+              <span class="term-add">+ </span><span class="term-out">Text search input</span>
+            </div>
+            <div style="margin-top:.5rem;" class="term-out">3 files updated</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 7: Capabilities ── -->
+  <section class="slide" data-slide="6">
+    <div class="section-label">Capabilities</div>
+    <div class="slide-title">このデモで体験できること</div>
+    <div class="cap-grid">
+      <div class="cap-card">
+        <div class="cap-icon">📖</div>
+        <div>
+          <div class="cap-title">コンテキスト自動把握</div>
+          <div class="cap-desc">CLAUDE.md を読み込みプロジェクト構造・規約・既知の問題を理解する</div>
+        </div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">🔎</div>
+        <div>
+          <div class="cap-title">バグの特定と修正</div>
+          <div class="cap-desc">コードを読んでバグを発見し、変更理由を説明しながら修正を適用する</div>
+        </div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">📂</div>
+        <div>
+          <div class="cap-title">マルチファイル編集</div>
+          <div class="cap-desc">HTML / CSS / JS を横断して整合性を保ちながら変更を加える</div>
+        </div>
+      </div>
+      <div class="cap-card">
+        <div class="cap-icon">🎯</div>
+        <div>
+          <div class="cap-title">既存スタイルに追従</div>
+          <div class="cap-desc">コーディング規約・命名規則・デザインテーマを学習して合わせて書く</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 8: Try it ── -->
+  <section class="slide s8" data-slide="7">
+    <div class="section-label">Try It</div>
+    <div class="try-title">試してみよう</div>
+    <div class="try-sub">アプリを開いて、Claude Code に話しかけるだけ</div>
+    <div class="cmd-list">
+      <div>
+        <div class="cmd-row">
+          <span class="term-prompt">$</span>
+          <span class="term-cmd">claude "このアプリのバグを全部直して"</span>
+        </div>
+      </div>
+      <div>
+        <div class="cmd-row">
+          <span class="term-prompt">$</span>
+          <span class="term-cmd">claude "フィルターと検索機能を追加して"</span>
+        </div>
+      </div>
+      <div>
+        <div class="cmd-row">
+          <span class="term-prompt">$</span>
+          <span class="term-cmd">claude "ローカルストレージに保存できるようにして"</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:2.5rem;font-size:.875rem;color:var(--muted);">
+      👉 &nbsp;<strong style="color:var(--text)">index.html</strong> をブラウザで開いてバグを確認してから始めよう
+    </div>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="prev">‹</button>
+  <div class="progress" id="progress"></div>
+  <button class="nav-btn" id="next">›</button>
+  <span class="slide-num" id="slide-num"></span>
+</div>
+
+<div class="key-hint">← → Space で操作</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function goTo(n, dir = 1) {
+  if (n < 0 || n >= total) return;
+  const prev = current;
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('exit');
+  setTimeout(() => slides[prev].classList.remove('exit'), 400);
+  current = n;
+  slides[current].classList.add('active');
+  updateNav();
+}
+
+function updateNav() {
+  document.getElementById('slide-num').textContent = `${current + 1} / ${total}`;
+  const dots = document.querySelectorAll('.dot');
+  dots.forEach((d, i) => d.classList.toggle('active', i === current));
+}
+
+function buildDots() {
+  const prog = document.getElementById('progress');
+  prog.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    prog.appendChild(d);
+  }
+}
+
+document.getElementById('next').addEventListener('click', () => goTo(current + 1));
+document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+  if (e.key === 'ArrowLeft')                    { e.preventDefault(); goTo(current - 1); }
+});
+
+buildDots();
+updateNav();
+</script>
+</body>
+</html>

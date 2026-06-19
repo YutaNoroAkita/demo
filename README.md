@@ -2,16 +2,34 @@
 
 Claude Code がバグ修正・機能追加をリアルタイムで行うデモです。
 
+## セットアップ / 起動
+
+依存パッケージのインストールは不要です。ローカルサーバーで起動します。
+
+```bash
+# Node.js (npx serve を都度ダウンロード、インストール不要)
+npm start
+#  → http://localhost:3000 を開く
+
+# Python しかない環境では
+npm run serve:python
+#  → http://localhost:3000 を開く
+```
+
+> ファイルを直接 `open index.html` でも動きますが、`file://` だと一部ブラウザで挙動が変わるため、ローカルサーバー経由を推奨します。
+> プレゼン資料は http://localhost:3000/slides.html で開けます。
+
+| コマンド | 内容 |
+|----------|------|
+| `npm start` / `npm run dev` | `npx serve` で静的配信（ポート3000） |
+| `npm run serve:python` | Python の `http.server` で配信（Node不要） |
+
 ## デモシナリオ
 
 ### Step 0: アプリを開いて動作確認
 
-```bash
-open index.html   # Mac
-# または xdg-open index.html (Linux)
-```
-
-ブラウザでアプリを開き、バグを体験してもらう：
+上記の `npm start` で起動し、ブラウザで `http://localhost:3000` を開く。
+バグを体験してもらう：
 
 1. タスクを追加 → **入力欄がクリアされない（Bug 1）**
 2. タスクを完了にする → **Done カウンターが変わらない（Bug 2）**

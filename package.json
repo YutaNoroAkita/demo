@@ -1,0 +1,17 @@
+{
+  "name": "dev-task-tracker",
+  "version": "1.0.0",
+  "description": "Claude Code デモ用のタスク管理Webアプリ（Vanilla JS / 静的サイト）",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve . --listen 3000",
+    "dev": "npx --yes serve . --listen 3000",
+    "serve:python": "python3 -m http.server 3000"
+  },
+  "keywords": [
+    "claude-code",
+    "demo",
+    "vanilla-js"
+  ],
+  "license": "MIT"
+}

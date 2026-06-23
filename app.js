@@ -1,8 +1,13 @@
 // Dev Task Tracker - app.js
 // NOTE: このファイルには意図的なバグが3つ含まれています
 
-let tasks = [];
-let nextId = 1;
+// デモ用の初期データ（開いてすぐバグを体験できるようにシード）
+let tasks = [
+    { id: 1, text: 'APIの認証バグを修正',   priority: 'high',   completed: false, createdAt: new Date() },
+    { id: 2, text: 'ユニットテストを追加',   priority: 'medium', completed: false, createdAt: new Date() },
+    { id: 3, text: 'ドキュメント更新',       priority: 'low',    completed: true,  createdAt: new Date() },
+];
+let nextId = 4;
 
 function addTask() {
     const input = document.getElementById('task-input');
